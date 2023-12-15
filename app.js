@@ -29,23 +29,63 @@ const initializeDbAndServer = async () => {
 
 initializeDbAndServer();
 
-/*const hasPriorityAndStatusProperties = (requestQuery) => {
-    return(
-        requestQuery.priority !== undefined && requestQuery.status !== undefined
-    );
+const hasPriorityAndStatusProperties = (requestQuery) => {
+  return (
+    requestQuery.priority !== undefined && requestQuery.status !== undefined
+  );
 };
 
 const hasPriorityProperties = (requestQuery) => {
-    return requestQuery.priority !== undefined;
+  return requestQuery.priority !== undefined;
 };
 
 const hasStatusProperties = (requestQuery) => {
-    return requestQuery.status !== undefined
-}; */
+  return requestQuery.status !== undefined;
+};
+
+app.get("/todos/", async (request, response) => {
+  let data = null;
+  let getTodosQuery = "";
+  const { search_q = "", priority, status } = request.query;
+
+  switch (true) {
+    case hasPriorityAndStatusProperties(request.query):
+      getTodosQuery = `
+            SELECT * 
+            FROM 
+            todo 
+            WHERE 
+            todo LIKE '%${search_q}%'
+            AND status = '${status}'
+            AND priority = '${priority}';
+            `;
+      break;
+    case hasPriorityProperties(request.query):
+      getTodosQuery = `
+            SELECT 
+            *
+            FROM todo 
+            WHERE 
+            todo LIKE '%${search_q}%'
+            AND status = '${status}';
+            `;
+      break;
+    default:
+      getTodosQuery = `
+          SELECT * FROM 
+          todo 
+          WHERE 
+          todo LIKE '%${search_q}%';
+          `;
+  }
+
+  data = await database.all(getTodosQuery);
+  response.send(data);
+});
 
 // API call GET todoId
 
-app.get("/todos/:todoId", async (request, response) => {
+app.get("/todos/:todoId/", async (request, response) => {
   const { todoId } = request.params;
   const getTodoQuery = `
      SELECT
@@ -53,7 +93,7 @@ app.get("/todos/:todoId", async (request, response) => {
     FROM 
      todo
     WHERE 
-     id : ${todoId};
+     id = ${todoId};
     `;
   const todo = await database.get(getTodoQuery);
   response.send(todo);
@@ -121,7 +161,7 @@ app.put("/todos/:todoId/", async (request, response) => {
   } = request.body;
 
   const UpdatedTodoQuery = `
-    UPDATED 
+    UPDATE 
     todo 
     SET 
     todo = '${todo}',
